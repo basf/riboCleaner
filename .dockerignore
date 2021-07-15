@@ -1,0 +1,7 @@
+*.simg
+*.sif
+.git
+
+# ignore the resources and results
+resources*
+results*

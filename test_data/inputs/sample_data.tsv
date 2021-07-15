@@ -1,0 +1,13 @@
+sample-id	r1	r2
+Flower_Field_1	raw_data/Flower_Field_1.R1.fastq.gz	raw_data/Flower_Field_1.R2.fastq.gz
+Flower_Field_2	raw_data/Flower_Field_2.R1.fastq.gz	raw_data/Flower_Field_2.R2.fastq.gz
+Flower_GH_1	raw_data/Flower_GH_1.R1.fastq.gz	raw_data/Flower_GH_1.R2.fastq.gz
+Flower_GH_2	raw_data/Flower_GH_2.R1.fastq.gz	raw_data/Flower_GH_2.R2.fastq.gz
+Leaf_Field_1	raw_data/Leaf_Field_1.R1.fastq.gz	raw_data/Leaf_Field_1.R2.fastq.gz
+Leaf_Field_2	raw_data/Leaf_Field_2.R1.fastq.gz	raw_data/Leaf_Field_2.R2.fastq.gz
+Leaf_GH_1	raw_data/Leaf_GH_1.R1.fastq.gz	raw_data/Leaf_GH_1.R2.fastq.gz
+Leaf_GH_2	raw_data/Leaf_GH_2.R1.fastq.gz	raw_data/Leaf_GH_2.R2.fastq.gz
+Seed_Field_1	raw_data/Seed_Field_1.R1.fastq.gz	raw_data/Seed_Field_1.R2.fastq.gz
+Seed_Field_2	raw_data/Seed_Field_2.R1.fastq.gz	raw_data/Seed_Field_2.R2.fastq.gz
+Seed_GH_1	raw_data/Seed_GH_1.R1.fastq.gz	raw_data/Seed_GH_1.R2.fastq.gz
+Seed_GH_2	raw_data/Seed_GH_2.R1.fastq.gz	raw_data/Seed_GH_2.R2.fastq.gz

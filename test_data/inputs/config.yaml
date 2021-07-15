@@ -1,0 +1,19 @@
+# path to sample data file that maps samples to forward (and reverse) reads
+samples: inputs/sample_data.tsv
+
+# points to a paired genome/gff for your organism of interest
+# the `gff_feature` parameter below will depend on your specific gff
+reference:
+    genome: inputs/references/Gmax_508_v4.0.fa
+    gff: inputs/references/Gmax_508_Wm82.a4.v1.gene.gff3
+
+# kingdom to use for the barrnap predictions https://github.com/tseemann/barrnap
+# choices: bac, arc, euk, mito
+kingdom: euk
+
+# feature to extract from the gff to map against (also used for identifying genes with homology to rDNA)
+# for eukaryotes, this will usually be 'mRNA'; for bacteria, this will usually be 'CDS'
+gff_feature: mRNA
+
+# subsample to this number of reads per sample to quantify rDNA
+subsample_reads: 10000

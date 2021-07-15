@@ -1,0 +1,198 @@
+"""
+# riboCleaner workflow
+
+https://github.com/basf/riboCleaner
+
+"""
+
+import os, sys
+import pandas as pd
+from snakemake.utils import min_version, validate
+
+# not a bad idea to require a minimum version of snakemake
+min_version("5.1.2")
+
+# load and validate config
+configfile: "inputs/config.yaml"
+validate(config, "schemas/config.schema.yaml")
+
+singularity: "docker://basfcontainers/ribocleaner"
+
+# make sure the reference paths exist
+for kind in ("genome", "gff"):
+    if not os.path.isfile(config["reference"][kind]):
+        raise ValueError("Reference {} path does not exist: {}".format(kind, config["reference"][kind]))
+
+# Set an arbitrarily high maximum threads. Then, this becomes the default for rules your want to parallelize as much as possible
+# If the user supplies a lower value, that will be used instead.
+max_threads = 64
+
+# load the samples file
+samples_f = config.get("samples", "")
+errors = []
+if samples_f:
+    if not os.path.isfile(samples_f):
+        raise ValueError("Samples file provided but the path doesn't exist: {}".format(samples_f))
+
+    # Could also do realpath here? This would give a more absolute path without symlinks
+    samples_f = os.path.realpath(samples_f)
+
+    samples = pd.read_table(samples_f, dtype=str).set_index("sample-id", drop=False).fillna("")
+
+    # make the data filepaths absolute and make sure they exist and that each R2 has an R1
+    sample_data_dir = os.path.dirname(samples_f)
+    for indx, row in samples.iterrows():
+        # we expect at least R1 to be filled out
+        has_r1 = False
+        try:
+            r1 = str(row["r1"]).strip()
+        except KeyError:
+            raise ValueError("Sample data doesn't have 'r1' column")
+
+        if r1:
+            full_r1 = os.path.join(sample_data_dir, r1)
+            samples["r1"][indx] = full_r1
+
+            # make sure the path exists
+            if os.path.isfile(full_r1):
+                has_r1 = True
+            else:
+                errors.append("{}: R1 reads path doesn't exist! ({})".format(indx, full_r1))
+        else:
+            errors.append("{}: doesn't have R1 reads".format(indx))
+
+        # check for R2
+        try:
+            r2 = str(row["r2"]).strip()
+        except KeyError:
+            raise ValueError("Sample data doesn't have 'r2' column")
+
+        if r2:
+            full_r2 = os.path.join(sample_data_dir, r2)
+            samples["r2"][indx] = full_r2
+
+            # make sure the path exists
+            if os.path.isfile(full_r2):
+                if not has_r1:
+                    errors.append("{}: has R2 reads but not R1".format(indx))
+            else:
+                errors.append("{}: R2 reads path doesn't exist! ({})".format(indx, full_r2))
+                
+    if errors:
+        for e in errors:
+            print("ERROR    " + e)
+        raise Exception("Detected one or more errors with the sample file. Refusing to continue.")
+
+else:
+    # make a blank df in the absence of a sample_data file
+    samples = pd.DataFrame(columns=['r1', 'r2'])
+
+# set up output paths to be used in the rules
+RDNA_PRED = "results/01_rDNA_identification"
+RDNA_QUANT = "results/02_rDNA_quantification"
+
+rule help:
+    """ Print the help message. This rule is first so it will be executed if there is nothing specified. """
+    run:
+        # print the workflow docstring
+        print("Snakefile: {p}".format(p=workflow.snakefile))
+        if workflow.globals["__doc__"]:
+            print(workflow.globals["__doc__"])
+
+        # print each (public) rule
+        print("\n##### RULES #####\n")
+        for rule in workflow.rules:
+            if not rule.name.startswith("_"):
+                if rule.docstring:
+                    print(rule.name)
+                    print(rule.docstring)
+                    print("----------\n")
+
+
+
+include: "rules/rDNA_identification.smk"
+rule rDNA_prediction:
+    """ Runs the rDNA prediction workflow """
+    input:
+        models=rules._get_rdna_models.output.rdna_models,
+        fasta=rules._get_rdna_fasta.output.fasta,
+        deduped_fasta=rules._dedupe_rdna_fasta.output.deduped,
+        names=rules._get_rdna_names.output.names
+
+
+def get_input_fastq(wildcards):
+        """ Gets the fastq files that correspond only to the samples requested """
+        fqs = samples.loc[wildcards.sample, ["r1", "r2"]]
+        return {"r1": fqs["r1"], "r2": fqs["r2"]}
+
+def get_input_fastq_single(wildcards):
+    """ Gets the single end fastq files that correspond only to the samples requested """
+    fqs = samples.loc[wildcards.sample, ["r1"]]
+    return {"r1": fqs["r1"]}
+
+rule _subsample_reads:
+    """ Subsamples the reads for faster testing """
+    input:
+        unpack(get_input_fastq)
+    output:
+        r1=os.path.join(RDNA_QUANT, "{sample}.R1.fastq.gz"),
+        r2=os.path.join(RDNA_QUANT, "{sample}.R2.fastq.gz")
+    params:
+        reads=config["subsample_reads"]
+    threads: max_threads
+    shell:
+        """
+        bbduk.sh in={input.r1} in2={input.r2} out={output.r1} out2={output.r2} reads={params.reads} threads={threads}
+        """
+
+rule _subsample_reads_single:
+    """ Subsamples the reads for faster testing (single end) """
+    input:
+        unpack(get_input_fastq_single)
+    output:
+        r1=os.path.join(RDNA_QUANT, "{sample}.fastq.gz")
+    params:
+        reads=config["subsample_reads"]
+    threads: max_threads
+    shell:
+        """
+        bbduk.sh in={input.r1} out={output.r1} reads={params.reads} threads={threads}
+        """
+
+
+include: "rules/rDNA_quantification.smk"
+include: "rules/rDNA_visualization.smk"
+
+rule identify:
+    """ Workflow for identifying putative rDNA gene models from the reference genome using barrnap """
+    input:
+        rules._get_rdna_names.output,
+        rules._write_rdna_fasta.output
+
+
+rule quantify:
+    """ Workflow for estimating the proportion of rDNA reads present in fastq samples (requires the output of the 'identify' workflow) """
+    input:
+        rules.quantify_rdna.output
+        
+
+rule visualize:
+    """ Visualize the rDNA abundance """
+    input:
+        rules.plot_abundance_summary.output
+
+
+rule clean:
+    """ Generate a counts table (TPM) with rDNA removed and mRNA TPM renormalized as if the rDNA was never present """
+    input:
+        rules.clean_tpm.output
+
+rule all:
+    """ Run all available workflows """
+    input:
+        rules.identify.input,
+        rules.quantify.input,
+        rules.visualize.input,
+        rules.clean.input
+
+# vim: set syntax=python expandtab tabstop=4 shiftwidth=4 autoindent foldmethod=indent foldnestmax=1:

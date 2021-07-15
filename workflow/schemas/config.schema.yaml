@@ -1,0 +1,33 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+description: snakemake configuration file
+
+type: object
+
+properties:
+    reference:
+        type: object
+        properties:
+            genome:
+                type: string
+                description: genome for the reference in FASTA format
+            gff:
+                type: string
+                description: GFF3 format annotation file that contains the gene annotations for your FASTA file
+            required:
+                - genome
+                - gff
+
+    kingdom:
+        type: string
+        enum:
+            - bac
+            - arc
+            - euk
+            - mito
+    samples:
+        type: string
+        description: tab delimited file of samples on which to run the quantification
+
+
+required:
+    - reference
