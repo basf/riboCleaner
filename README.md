@@ -15,6 +15,20 @@ This [workflow diagram](./riboCleaner.png) shows how the two parts of the workfl
 
 ## Quick Start
 
+If you want to see the output riboCleaner produces, we have provided the [report from running riboCleaner on a test dataset](test_data.example_report.zip)
+
+To jump right in and run riboCleaner as fast as possible:
+
+
+```bash
+# clone this repo
+git clone https://github.com/basf/riboCleaner.git
+cd riboCleaner/test_data
+```
+
+Then follow the [instructions in the test data README](./test_data/README.md) to make sure everything is set up properly.
+
+Once the workflow runs on the test data, replace the test data inputs with your own (and delete the contents of the `results` directory) and rerun. 
 
 
 ---
@@ -141,7 +155,7 @@ docker run \
     -v ${PWD}/inputs:/analysis/inputs \
     -v ${PWD}/results:/analysis/results \
     -v ${PWD}/.snakemake:/analysis/.snakemake \
-    ribocleaner-wf \
+    basfcontainers/ribocleaner \
     snakemake --cores 1 -npr all
 
 # running the full workflow (on 8 cores)
@@ -149,7 +163,7 @@ docker run \
     -v ${PWD}/inputs:/analysis/inputs \
     -v ${PWD}/results:/analysis/results \
     -v ${PWD}/.snakemake:/analysis/.snakemake \
-    ribocleaner-wf \
+    basfcontainers/ribocleaner \
     snakemake --cores 8 -pr all
 
 # generating a report
@@ -160,7 +174,7 @@ docker run \
     -v ${PWD}/inputs:/analysis/inputs \
     -v ${PWD}/results:/analysis/results \
     -v ${PWD}/.snakemake:/analysis/.snakemake \
-    ribocleaner-wf \
+    basfcontainers/ribocleaner \
     snakemake --cores 1 --report results/riboCleaner_full_report.zip -pr all
 
 ```
@@ -169,7 +183,9 @@ docker run \
 
 ### Using Singularity
 
-After running the following command, you will have a `ribocleaner-wf_latest.sif` file in your working directory.
+> NOTE: Singularity can be configured with different parameters for mounting paths into the container. You may have to work with your system administrator to get this Singularity container to work properly.
+
+After running the following command, you will have a `ribocleaner_latest.sif` file in your working directory.
 
 ```bash
 # pull the container - this only needs to be done once
@@ -183,26 +199,29 @@ All singularity commands mount the `inputs`, `results`, and `.snakemake` directo
 
 # dryrun
 singularity exec \
+    -e \
     -B ${PWD}/inputs:/analysis/inputs \
     -B ${PWD}/results:/analysis/results \
     -B ${PWD}/.snakemake:/analysis/.snakemake \
-    ribocleaner-wf_latest.sif \
+    ribocleaner_latest.sif \
     bash -c "cd /analysis && snakemake --cores 1 -npr all"
 
 # run full workflow
 singularity exec \
+    -e \
     -B ${PWD}/inputs:/analysis/inputs \
     -B ${PWD}/results:/analysis/results \
     -B ${PWD}/.snakemake:/analysis/.snakemake \
-    ribocleaner-wf_latest.sif \
+    ribocleaner_latest.sif \
     bash -c "cd /analysis && snakemake --cores 8 -pr all"
 
 # make the report
 singularity exec \
+    -e \
     -B ${PWD}/inputs:/analysis/inputs \
     -B ${PWD}/results:/analysis/results \
     -B ${PWD}/.snakemake:/analysis/.snakemake \
-    ribocleaner-wf_latest.sif \
+    ribocleaner_latest.sif \
     bash -c "cd /analysis && snakemake --cores 1 --report results/riboCleaner_full_report.zip -pr all"
 
 ```
@@ -272,7 +291,7 @@ docker run \
     -v ${PWD}/inputs:/analysis/inputs \
     -v ${PWD}/results:/analysis/results \
     -v ${PWD}/.snakemake:/analysis/.snakemake \
-    ribocleaner-wf \
+    basfcontainers/ribocleaner \
     snakemake --cores 8 -pr identify
 
 # generating a report
@@ -283,7 +302,7 @@ docker run \
     -v ${PWD}/inputs:/analysis/inputs \
     -v ${PWD}/results:/analysis/results \
     -v ${PWD}/.snakemake:/analysis/.snakemake \
-    ribocleaner-wf \
+    basfcontainers/ribocleaner \
     snakemake --cores 1 --report results/riboCleaner_identify.zip -pr identify
 
 ```

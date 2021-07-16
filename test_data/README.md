@@ -3,13 +3,19 @@
 
 ## Overview
 
-This test data is from our published paper.
+This test data is from our published paper. The results obtained from running riboCleaner on it are [available](../test_data.example_report.zip).
 
 It is RNASeq data from several tissue types in field and greenhouse locations.
 
-Before following these steps, make sure you have already followed the [instructions for Running riboCleaner using Docker](../README.md) to become familiar with how riboCleaner works and have built the *ribocleaner-wf* Docker image. 
+Before following these steps, it is a good idea to review the [instructions for Running riboCleaner using Docker](../README.md) to become familiar with how riboCleaner works and build the *ribocleaner-wf* Docker image. 
 
-For this, we used Docker, but the instructions from the Running riboCleaner using Singularity section of the main README can be used from within this directory to run this analysis using Singularity.
+Alternativly, use the folllowing command to pull the Docker image:
+
+```bash 
+docker pull basfcontainers/ribocleaner
+```
+
+For this example, we used Docker, but the instructions from the Running riboCleaner using Singularity section of the main README can be used from within this directory to run this analysis using Singularity.
 
 ---
 
@@ -91,7 +97,7 @@ docker run \
     -v ${PWD}/inputs:/analysis/inputs \
     -v ${PWD}/results:/analysis/results \
     -v ${PWD}/.snakemake:/analysis/.snakemake \
-    ribocleaner-wf \
+    basfcontainers/ribocleaner \
     snakemake --cores 8 -pr all
 
 # generating a report
@@ -102,7 +108,7 @@ docker run \
     -v ${PWD}/inputs:/analysis/inputs \
     -v ${PWD}/results:/analysis/results \
     -v ${PWD}/.snakemake:/analysis/.snakemake \
-    ribocleaner-wf \
+    basfcontainers/ribocleaner \
     snakemake --cores 1 --report results/riboCleaner_full_report.zip -pr all
 
 ```
