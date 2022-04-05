@@ -12,7 +12,7 @@ rule _barrnap:
     threads: max_threads
     shell:
         """
-        barrnap --kingdom euk --threads {threads} {input.reference} > {output.gff}
+        barrnap --kingdom {params.kingdom} --threads {threads} {input.reference} > {output.gff}
         """
 
 rule _infer_non_overlapping_repeats:
