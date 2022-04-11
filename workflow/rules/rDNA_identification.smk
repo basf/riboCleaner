@@ -313,7 +313,7 @@ rule _summarize_identification:
         with open(output.summary, 'w') as OUT:
             OUT.write("riboCleaner ran barrnap to detect the following counts of rDNA elements:\n")
 
-            for elem in ["18S", "5.8S", "28S", "5S"]:
+            for elem in ["18S", "5.8S", "28S", "5S", "other"]:
                 OUT.write("    {elem}: {complete} complete, {partial} partial\n".format(elem=elem, complete=barrnap_results[elem][False], partial=barrnap_results[elem][True]))
 
             OUT.write("\n")
