@@ -20,6 +20,8 @@ rule _infer_non_overlapping_repeats:
     merge to infer non-overlapping repeats
     
     this will merge neighboring rDNA elements together into one feature and extract the features with a certain number of elements.
+
+    At this point, we need to infer if the rDNA repeat regions are indicative of rDNA being successfully detected in the genome or not.
     """
     input:
         gff=rules._barrnap.output.gff,
@@ -49,7 +51,16 @@ rule _get_rdna_models:
         gff_feature=config.get("gff_feature", "mRNA")
     threads: 1
     shell:
-        "bedtools intersect -b {input.nor} -a {input.gene_models} | grep {params.gff_feature} > {output.rdna_models}"
+        """
+        set +e
+        bedtools intersect -b {input.nor} -a {input.gene_models} | grep {params.gff_feature} > {output.rdna_models}
+        exitcode=$?
+        if [ $exitcode -eq 1 ]
+        # no matches were found
+        then
+            exit 0
+        fi
+        """
         
 rule _gff2bed:
     """ Converts the GFF to a BED so we can use the names """
@@ -179,7 +190,7 @@ rule _blast_for_more_rdna:
     output:
         hits=os.path.join(RDNA_PRED, "homology_rdna_models.blast6.tsv")
     shell:
-        "blastn -query {input.query} -subject {input.subject} -outfmt '6 qseqid sseqid qstart qend pident qcovs' -out {output.hits}"
+        "blastn -query {input.query} -subject {input.subject} -outfmt '6 qseqid sseqid qstart qend pident qcovs' -out {output.hits} || touch {output.hits}"
 
 rule _get_names_from_blast:
     """ 
@@ -253,5 +264,70 @@ rule _write_rdna_fasta:
         fasta=report(os.path.join(RDNA_PRED, "all_rdna_models.fasta"), caption="../report/all_rdna_fasta.rst", category="Identification")
     shell:
         "/opt/bbmap/filterbyname.sh include=t substring=name in={input.features} names={input.names} out={output.fasta}"        
+
+
+rule _summarize_identification:
+    """ Sometimes riboCleaner will fail to detect any rDNA genes. Warn the user if this is the case """
+    input:
+        barrnap_predictions=rules._barrnap.output.gff,
+        rdna_regions=rules._infer_non_overlapping_repeats.output.nor,
+        gene_models=rules._get_rdna_names.output.names
+    output:
+        summary=report(os.path.join(RDNA_PRED, "identification_SUMMARY.txt"), caption="../report/identification_SUMMARY.rst", category="Identification")
+    run:
+        from collections import defaultdict
+        # count non-partial rDNA predicted by barrnap
+        barrnap_results = defaultdict(lambda: defaultdict(int))
+        with open(input.barrnap_predictions, 'r') as IN:
+            for line in IN:
+                if not line.startswith("#"):
+                    # detect if this is partial
+                    partial = "partial" in line
+
+                    # quantify each rDNA type
+                    if "5S_rRNA" in line:
+                        barrnap_results["5S"][partial] += 1
+                    elif "18S_rRNA" in line:
+                        barrnap_results["18S"][partial] += 1
+                    elif "28S_rRNA" in line:
+                        barrnap_results["28S"][partial] += 1
+                    elif "5_8S_rRNA" in line:
+                        barrnap_results["5.8S"][partial] += 1
+                    # needs to be expanded for prokaryotes 
+                    else:
+                        barrnap_results["other"][partial] += 1
+        
+        # count the rDNA regions
+        rDNA_regions = 0
+        with open(input.rdna_regions, 'r') as IN:
+            for line in IN:
+                rDNA_regions += 1
+
+        # count the rDNA genes
+        rDNA_gene_models = 0
+        with open(input.gene_models, 'r') as IN:
+            for line in IN:
+                rDNA_gene_models += 1
+
+        # output the summary
+        with open(output.summary, 'w') as OUT:
+            OUT.write("riboCleaner ran barrnap to detect the following counts of rDNA elements:\n")
+
+            for elem in ["18S", "5.8S", "28S", "5S"]:
+                OUT.write("    {elem}: {complete} complete, {partial} partial\n".format(elem=elem, complete=barrnap_results[elem][False], partial=barrnap_results[elem][True]))
+
+            OUT.write("\n")
+            OUT.write("These elements were merged into {} rDNA-rich regions.\n".format(rDNA_regions))
+            OUT.write("\n")
+            OUT.write("The rDNA regions were found to overlap with (or have homology to) {} genes in the GFF file. These have been flagged as rDNA models.\n".format(rDNA_gene_models))
+
+            OUT.write("\n")
+
+            # begin the warning section
+            if not rDNA_regions:
+                OUT.write("WARNING: There were no rDNA regions detected. This may be because there are no rDNA sequences in your reference genome (detectable by barrnap) or because they do not form regular rDNA repeats. riboCleaner will not be able to accurately quantify rDNA in your dataset.\n")
+
+            if not rDNA_gene_models:
+                OUT.write("WARNING: There were no rDNA gene models detected. This is often good news but means riboCleaner will detect no rDNA for this genome. However, since there are no false gene models originating from rDNA, your counts table resulting from standard transcriptome analysis won't be biased by false rDNA gene models!\n")
 
 # vim: set syntax=python expandtab tabstop=4 shiftwidth=4 autoindent foldmethod=indent foldnestmax=1:
