@@ -11,6 +11,12 @@ reference:
 # choices: bac, arc, euk, mito
 kingdom: euk
 
+# rDNA detection parameters
+
+# riboCleaner constructs rDNA regions by looking for more than `nor_counts` rDNA elements each separated by less than `nor_distance` base pairs
+nor_distance: 5000
+nor_counts: 5
+
 # feature to extract from the gff to map against (also used for identifying genes with homology to rDNA)
 # for eukaryotes, this will usually be 'mRNA'; for bacteria, this will usually be 'CDS'
 gff_feature: mRNA
