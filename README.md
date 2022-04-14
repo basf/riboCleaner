@@ -7,9 +7,9 @@ The identify workflow *identifies* putative rDNA genes in a genome of interest. 
 
 The quantify workflow *quantifies* the abundance of rRNA transcripts in RNA-Seq samples. For this we use [salmon](https://combine-lab.github.io/salmon/) to quantify the abundance of transcripts in each sample (including the putative rDNA gene models). This allows any reads derived from rRNA to map to the rRNA transcripts and avoids biasing the counts of mRNA transcripts with homologous rRNA reads. Then, riboCleaner quantifies the abundance of the rRNA transcripts to give an estimate of rRNA prevalence in the RNA-seq data and visualizes the results. As a final step, riboCleaner removes the rRNA transcripts from the salmon counts table to yield a table of mRNA abundances that can be normalized and used for downstream analysis.
 
-This [workflow diagram](./riboCleaner_figure_S1.png) shows how the different parts of the riboCleaner standard workflow fits together. You can also read a [more detailed description of the methods](./detailed_methods.md) or see the [Snakemake DAG](./riboCleaner.png). 
+This [workflow diagram](./docs/riboCleaner_figure_S1.png) shows how the different parts of the riboCleaner standard workflow fits together. You can also read a [more detailed description of the methods](./docs/detailed_methods.md) or see the [Snakemake DAG](./docs/riboCleaner.png). 
 
-![workflow_diagram](./riboCleaner_figure_S1.png)
+![workflow_diagram](./docs/riboCleaner_figure_S1.png)
 
 
 ---
