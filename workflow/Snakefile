@@ -167,7 +167,8 @@ rule identify:
     """ Workflow for identifying putative rDNA gene models from the reference genome using barrnap """
     input:
         rules._get_rdna_names.output,
-        rules._write_rdna_fasta.output
+        rules._write_rdna_fasta.output,
+        rules._summarize_identification.output
 
 
 rule quantify:
